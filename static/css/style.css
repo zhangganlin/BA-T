@@ -42,6 +42,12 @@ p { margin: 0 0 14px; }
 
 /* ---------- hero ---------- */
 .hero { padding: 64px 0 20px; text-align: center; }
+.title-row {
+  display: flex; align-items: center; justify-content: center; gap: 22px;
+  margin: 0 0 22px;
+}
+.title-row .logo { width: clamp(64px, 8vw, 96px); height: auto; flex: none; border-radius: 22%; box-shadow: 0 4px 14px rgba(31, 95, 158, .25); }
+.title-row .title { margin: 0; text-align: left; }
 .title {
   font-size: clamp(1.75rem, 4.4vw, 2.9rem);
   line-height: 1.2; font-weight: 800; letter-spacing: -0.02em;
@@ -154,6 +160,8 @@ footer p { margin: 0; }
   body { font-size: 16px; }
   .hero { padding-top: 40px; }
   .title br { display: none; }
+  .title-row { flex-direction: column; gap: 14px; }
+  .title-row .title { text-align: center; }
   .teaser-demo { flex-direction: column; }
   .teaser-demo .inputs.col { flex-direction: row; }
   .teaser-demo .inputs .lbl { display: none; }
