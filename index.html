@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BA-T: An Iterative Transformer for Two-View Bundle Adjustment</title>
+  <meta name="description" content="BA-T is a bundle-adjustment-inspired iterative Transformer that refines camera poses and local geometry in latent token space with a single, compact, reusable layer.">
+  <meta name="keywords" content="BA-T, bundle adjustment, transformer, 3D reconstruction, pose estimation, two-view, feed-forward, iterative refinement">
+  <meta property="og:title" content="BA-T: An Iterative Transformer for Two-View Bundle Adjustment">
+  <meta property="og:description" content="NeurIPS 2026. A repeatable compact layer enabling geometry and camera refinement in latent space.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="static/images/teaser.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"
+    onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'\\(',right:'\\)',display:false}]});"></script>
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1 class="title">
+      <span class="acc">BA-T</span>: An Iterative <span class="acc">T</span>ransformer<br>
+      for Two-View <span class="acc">B</span>undle <span class="acc">A</span>djustment
+    </h1>
+    <p class="venue">NeurIPS 2026</p>
+
+    <p class="authors">
+      <a href="https://ganlinzhang.xyz/" target="_blank" rel="noopener">Ganlin Zhang</a><sup>1,2</sup>
+      <a href="https://wrchen530.github.io/" target="_blank" rel="noopener">Weirong Chen</a><sup>1,2</sup>
+      <a href="https://cvg.cit.tum.de/members/cremers" target="_blank" rel="noopener">Daniel Cremers</a><sup>1,2</sup>
+      <a href="https://xiwang1212.github.io/homepage/" target="_blank" rel="noopener">Xi Wang</a><sup>1,2,3</sup>
+    </p>
+    <p class="affils">
+      <span><sup>1</sup>TU Munich</span>
+      <span><sup>2</sup>MCML</span>
+      <span><sup>3</sup>ETH Zurich</span>
+    </p>
+
+    <nav class="links">
+      <a class="btn" href="https://arxiv.org/pdf/2606.03287" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+        Paper
+      </a>
+      <a class="btn" href="https://arxiv.org/abs/2606.03287" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16M20 4L4 20"/></svg>
+        arXiv
+      </a>
+      <a class="btn" href="https://github.com/zhangganlin/BA-T" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19c-4.3 1.4-4.3-2.5-6-3m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12.3 12.3 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg>
+        Code <small>(coming soon)</small>
+      </a>
+      <a class="btn" href="#bibtex">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8l-4 4 4 4M17 8l4 4-4 4M14 4l-4 16"/></svg>
+        BibTeX
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- TL;DR + teaser -->
+  <section class="wrap">
+    <div class="tldr"><strong>TL;DR</strong> A repeatable compact layer, enabling geometry and camera refinement in latent space.</div>
+
+    <div class="teaser-demo">
+      <div class="inputs col">
+        <span class="lbl">Input views</span>
+        <img src="static/images/inputs/teaser_0.jpg" alt="Input view A: kitchen counter" loading="lazy">
+        <img src="static/images/inputs/teaser_1.jpg" alt="Input view B: kitchen counter with toaster" loading="lazy">
+      </div>
+      <div class="arrow" aria-hidden="true">&rarr;</div>
+      <figure class="video-box">
+        <video src="static/videos/teaser.mp4" poster="static/videos/teaser_poster.jpg" autoplay muted loop playsinline></video>
+        <figcaption>Geometry &amp; relative camera pose refined across BA-T iterations.</figcaption>
+      </figure>
+    </div>
+
+    <figure class="fig">
+      <img src="static/images/teaser.jpg" alt="Overview of BA-T: a mono encoder followed by a shared BA-T layer applied for iterations 0 to 3; reconstructions and 3D point error maps improve with each iteration." loading="lazy">
+      <figcaption>
+        <b>Overview of BA-T.</b> Given input images, BA-T performs iterative updates on camera and local geometry
+        tokens using a compact, reusable BA-T layer in latent space. The arrow indicates the error between GT poses and
+        estimated poses (blue and pink), which gradually decreases; red boxes highlight regions progressively refined
+        across iterations. The error maps visualize per-view 3D point errors.
+      </figcaption>
+    </figure>
+
+    <div class="stats">
+      <div class="stat"><span class="num">16%</span><span class="cap">of DUSt3R's decoder parameters (38M vs. 227M)</span></div>
+      <div class="stat"><span class="num">1</span><span class="cap">shared, lightweight layer applied iteratively instead of a deep attention stack</span></div>
+      <div class="stat"><span class="num">&minus;44%</span><span class="cap">3D correspondence error from iteration 1 to 4 (vs. &minus;27% for a stacked decoder)</span></div>
+      <div class="stat"><span class="num">3&ndash;4</span><span class="cap">iterations to converge on pose and geometry</span></div>
+    </div>
+  </section>
+
+  <!-- Abstract -->
+  <section class="wrap narrow" id="abstract">
+    <h2>Abstract</h2>
+    <p>
+      Feed-forward models for 3D reconstruction have achieved strong performance using deep cross-view attention to
+      exchange information across images. However, these approaches often depend on heavy decoder stacks and lack a
+      structured mechanism for geometry refinement, resulting in poor multi-view consistency. We address this by drawing
+      inspiration from classical bundle adjustment (BA), which can be viewed as an iterative information propagation
+      process between poses and local geometry. Inspired by BA, we propose <b>BA-T</b>, an iterative Transformer that
+      implements BA-style structured updates as a repeatable layer in implicit token space. Instead of relying on deep
+      attention stacks, BA-T refines predictions based on latent residual by a single lightweight layer. Experiments
+      demonstrate that BA-T progressively improves pose and reconstruction accuracy across iterations, achieves stronger
+      cross-view consistency than conventional decoders, and matches or surpasses substantially larger models while using
+      only 16% of their decoder parameters. BA-T provides a compact, efficient, and structural alternative to depth-heavy
+      attention, enabling accurate 3D reconstruction within a lightweight architecture.
+    </p>
+  </section>
+
+  <!-- Method -->
+  <section class="wrap" id="method">
+    <h2>Method</h2>
+
+    <div class="narrow">
+      <h3>Bundle adjustment as information propagation</h3>
+      <p>
+        Classical BA jointly refines the relative camera \(c\) and local geometry \(g_a, g_b\) by minimizing residuals
+        between corresponding regions. Solving the Gauss&ndash;Newton normal equations with the Schur complement reveals
+        a clear information flow: residuals are computed first, the camera update aggregates the coupled residual
+        information, and the updated camera is then used to refine geometry.
+      </p>
+      $$\Delta c = \left(B - E C^{-1} E^{\top}\right)^{-1}\left(v - E C^{-1} w\right),\qquad
+        \Delta g = C^{-1}\left(w - E^{\top} \Delta c\right)$$
+      <p>
+        Rather than forming and inverting these systems on explicit geometry, BA-T keeps only this <em>pattern</em>.
+        Camera and geometry become latent tokens, and a single learnable layer \(F_\theta\) predicts their updates,
+        applied for as many iterations as needed:
+      </p>
+      $$\mathcal{T}^{(k)} = \{c^{(k)}_{a\to b},\, \mathbf{g}^{(k)}_a,\, \mathbf{g}^{(k)}_b\},\qquad
+        \mathcal{T}^{(k+1)} = \mathcal{T}^{(k)} + F_\theta\big(\mathcal{T}^{(k)}\big)$$
+    </div>
+
+    <figure class="fig">
+      <img src="static/images/pipeline.png" alt="BA-T pipeline: encoder, shared BA-T layers, heads; detail shows latent residual calculation, camera update and local geometry update." loading="lazy">
+      <figcaption>
+        <b>The BA-T pipeline.</b> BA-T takes camera tokens (learnable initialization) and local geometry tokens (from the
+        image encoder) and refines them iteratively. Each step transforms geometry tokens across camera spaces, matches
+        correspondences, and computes latent residuals; camera tokens and per-view geometry tokens are then refined by
+        the Camera Update and Local Geometry Update.
+      </figcaption>
+    </figure>
+
+    <ol class="steps">
+      <li>
+        <span class="step-n">1</span>
+        <h4>Latent residual</h4>
+        <p>
+          A <b>camera-conditioned geometry transform</b> (adaLN conditioning, as in DiT) moves view-<i>a</i> tokens into
+          view <i>b</i>'s space. <b>Token-level correspondence matching</b> uses attention scores to softly gather the
+          matching tokens, handling sub-token matches and occlusion. An MLP on the difference of projected properties
+          yields a <b>latent residual</b>, a learned analogue of reprojection error.
+        </p>
+      </li>
+      <li>
+        <span class="step-n">2</span>
+        <h4>Camera update</h4>
+        <p>
+          Following the Schur-complement ordering, the camera token is updated first: it acts as a single query that
+          cross-attends over all residual tokens, aggregating geometric evidence into
+          \(\Delta c_{a\to b}\).
+        </p>
+      </li>
+      <li>
+        <span class="step-n">3</span>
+        <h4>Local geometry update</h4>
+        <p>
+          With the updated camera, each view's geometry tokens cross-attend to the other view's camera-conditioned tokens,
+          so both are aligned in the same space. This symmetric update enforces cross-view consistency.
+        </p>
+      </li>
+    </ol>
+
+    <div class="two-figs">
+      <figure class="fig">
+        <img src="static/images/correspondence.png" alt="Query tokens in view a and their attention scores in view b, highlighting correct correspondences." loading="lazy">
+        <figcaption>
+          <b>Token-level correspondence.</b> For a geometry token from one view, attention scores highlight the correct
+          region in the other view, for both ambiguous (left, middle) and distinctive (right) regions.
+        </figcaption>
+      </figure>
+      <figure class="fig">
+        <img src="static/images/residual.png" alt="Latent residual norm maps for four iterations, getting darker (smaller) each iteration." loading="lazy">
+        <figcaption>
+          <b>Latent residuals shrink across iterations.</b> The L2 norm of the latent residual, computed in the space of
+          view <i>b</i>, decreases as the pose and geometry estimates improve.
+        </figcaption>
+      </figure>
+    </div>
+
+    <p class="narrow note">
+      Every iteration is supervised, with later iterations weighted more heavily
+      (\(\mathcal{L}_{\text{total}} = \sum_{k} \alpha_\lambda^{K-k}\mathcal{L}^{(k)}\)), so the network learns to refine
+      progressively rather than only fitting its final output.
+    </p>
+  </section>
+
+  <!-- Demos -->
+  <section class="wrap" id="results">
+    <h2>Results</h2>
+
+    <h3>Iterative refinement, two views</h3>
+    <p class="lead">Local geometry and the relative camera are refined across iterations.</p>
+    <div class="demo-grid">
+      <div class="demo">
+        <div class="inputs col">
+          <img src="static/images/inputs/twoview_office_0.jpg" alt="Input view: whiteboard" loading="lazy">
+          <img src="static/images/inputs/twoview_office_1.jpg" alt="Input view: office chair" loading="lazy">
+        </div>
+        <video src="static/videos/twoview_office.mp4" poster="static/videos/twoview_office_poster.jpg" autoplay muted loop playsinline preload="none"></video>
+      </div>
+      <div class="demo">
+        <div class="inputs col">
+          <img src="static/images/inputs/twoview_corner_0.jpg" alt="Input view: room corner" loading="lazy">
+          <img src="static/images/inputs/twoview_corner_1.jpg" alt="Input view: room corner, closer" loading="lazy">
+        </div>
+        <video src="static/videos/twoview_corner.mp4" poster="static/videos/twoview_corner_poster.jpg" autoplay muted loop playsinline preload="none"></video>
+      </div>
+      <div class="demo">
+        <div class="inputs col">
+          <img src="static/images/inputs/twoview_desk_0.jpg" alt="Input view: cluttered desk" loading="lazy">
+          <img src="static/images/inputs/twoview_desk_1.jpg" alt="Input view: cluttered desk, shifted" loading="lazy">
+        </div>
+        <video src="static/videos/twoview_desk.mp4" poster="static/videos/twoview_desk_poster.jpg" autoplay muted loop playsinline preload="none"></video>
+      </div>
+      <div class="demo">
+        <div class="inputs col">
+          <img src="static/images/inputs/twoview_shelf_0.jpg" alt="Input view: bookshelf" loading="lazy">
+          <img src="static/images/inputs/twoview_shelf_1.jpg" alt="Input view: bookshelf and desk" loading="lazy">
+        </div>
+        <video src="static/videos/twoview_shelf.mp4" poster="static/videos/twoview_shelf_poster.jpg" autoplay muted loop playsinline preload="none"></video>
+      </div>
+    </div>
+
+    <h3>Extension to multi-view</h3>
+    <p class="lead">
+      All cross-view interactions in BA-T happen in each view's local space, so it extends to more views without
+      architectural changes: each query view attends to all others, and all views are refined together.
+    </p>
+    <div class="demo-grid mv">
+      <div class="demo">
+        <div class="inputs row4">
+          <img src="static/images/inputs/multiview_office_0.jpg" alt="Office input 1" loading="lazy">
+          <img src="static/images/inputs/multiview_office_1.jpg" alt="Office input 2" loading="lazy">
+          <img src="static/images/inputs/multiview_office_2.jpg" alt="Office input 3" loading="lazy">
+          <img src="static/images/inputs/multiview_office_3.jpg" alt="Office input 4" loading="lazy">
+        </div>
+        <video src="static/videos/multiview_office.mp4" poster="static/videos/multiview_office_poster.jpg" autoplay muted loop playsinline preload="none"></video>
+      </div>
+      <div class="demo">
+        <div class="inputs row4">
+          <img src="static/images/inputs/multiview_bedroom_0.jpg" alt="Bedroom input 1" loading="lazy">
+          <img src="static/images/inputs/multiview_bedroom_1.jpg" alt="Bedroom input 2" loading="lazy">
+          <img src="static/images/inputs/multiview_bedroom_2.jpg" alt="Bedroom input 3" loading="lazy">
+          <img src="static/images/inputs/multiview_bedroom_3.jpg" alt="Bedroom input 4" loading="lazy">
+        </div>
+        <video src="static/videos/multiview_bedroom.mp4" poster="static/videos/multiview_bedroom_poster.jpg" autoplay muted loop playsinline preload="none"></video>
+      </div>
+    </div>
+    <figure class="fig">
+      <img src="static/images/multiview.jpg" alt="Four-view reconstruction across iterations 1 to 3 with trajectory ATE 0.232m, 0.149m and 0.029m." loading="lazy">
+      <figcaption>
+        <b>Four-view reconstruction.</b> Green frustums are GT poses. Trajectory ATE drops from 0.232&nbsp;m to
+        0.029&nbsp;m over three iterations.
+      </figcaption>
+    </figure>
+
+    <h3>Qualitative results</h3>
+    <figure class="fig">
+      <img src="static/images/qualitative.jpg" alt="Left: reconstructions and 3D error maps at iteration 1 and 4. Right: estimated relative poses across iterations with decreasing pose error." loading="lazy">
+      <figcaption>
+        <b>Left:</b> reconstructions and local 3D point error maps at iterations 1 and 4 on 7Scenes, BundleFusion and
+        TUM-RGBD. Red boxes mark misalignments at iteration 1 that are corrected by iteration 4 (green).
+        <b>Right:</b> estimated relative poses across iterations. BA-T keeps refining the pose even with very little
+        visual overlap (second row).
+      </figcaption>
+    </figure>
+
+    <h3>Pose and geometry vs. larger decoders</h3>
+    <p class="lead">
+      Relative pose (AUC) and geometry on 7Scenes and BundleFusion. BA-T (\(K=4\)) gives the best pose among two-view
+      methods and competitive geometry with a far smaller decoder. <span class="swatch best"></span> best and
+      <span class="swatch second"></span> second among two-view methods.
+    </p>
+    <div class="table-scroll">
+      <table class="res" id="table-main">
+        <thead>
+          <tr>
+            <th rowspan="3" class="left">Method</th>
+            <th colspan="7">7Scenes</th>
+            <th colspan="7">BundleFusion</th>
+            <th rowspan="3">Decoder<br>params&thinsp;&darr;</th>
+          </tr>
+          <tr>
+            <th colspan="3">Pose AUC&thinsp;&uarr;</th><th colspan="4">Geometry</th>
+            <th colspan="3">Pose AUC&thinsp;&uarr;</th><th colspan="4">Geometry</th>
+          </tr>
+          <tr>
+            <th>@5°</th><th>@10°</th><th>@20°</th><th>Chamf.&darr;</th><th>Acc.&darr;</th><th>Comp.&darr;</th><th>&delta;<sub>1.25</sub>&uarr;</th>
+            <th>@5°</th><th>@10°</th><th>@20°</th><th>Chamf.&darr;</th><th>Acc.&darr;</th><th>Comp.&darr;</th><th>&delta;<sub>1.25</sub>&uarr;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="16">Trained with multi-view data</td></tr>
+          <tr><td class="left">VGGT</td><td>0.19</td><td>0.39</td><td>0.60</td><td>0.10</td><td>0.10</td><td>0.07</td><td>0.97</td><td>0.18</td><td>0.36</td><td>0.56</td><td>0.06</td><td>0.07</td><td>0.04</td><td>0.99</td><td>605M</td></tr>
+          <tr><td class="left">MapAnything</td><td>0.09</td><td>0.23</td><td>0.44</td><td>0.10</td><td>0.12</td><td>0.07</td><td>0.98</td><td>0.03</td><td>0.11</td><td>0.27</td><td>0.15</td><td>0.19</td><td>0.09</td><td>0.98</td><td>171M</td></tr>
+          <tr><td class="left">Depth Anything 3</td><td>0.22</td><td>0.43</td><td>0.64</td><td>0.08</td><td>0.09</td><td>0.06</td><td>0.98</td><td>0.20</td><td>0.37</td><td>0.57</td><td>0.06</td><td>0.07</td><td>0.04</td><td>0.99</td><td>765M</td></tr>
+          <tr class="group"><td colspan="16">Trained with two-view data</td></tr>
+          <tr class="tv"><td class="left">DUSt3R</td><td>0.09</td><td>0.22</td><td>0.42</td><td>0.13</td><td>0.13</td><td>0.12</td><td>0.81</td><td>0.16</td><td>0.33</td><td>0.52</td><td>0.25</td><td>0.26</td><td>0.22</td><td>0.58</td><td>227M</td></tr>
+          <tr class="tv"><td class="left">MASt3R</td><td>0.15</td><td>0.32</td><td>0.52</td><td>0.16</td><td>0.16</td><td>0.11</td><td>0.79</td><td>0.16</td><td>0.32</td><td>0.50</td><td>0.24</td><td>0.26</td><td>0.22</td><td>0.58</td><td>227M</td></tr>
+          <tr class="tv"><td class="left">ViSTA</td><td>0.13</td><td>0.33</td><td>0.56</td><td>0.10</td><td>0.10</td><td>0.10</td><td>0.98</td><td>0.15</td><td>0.31</td><td>0.51</td><td>0.06</td><td>0.06</td><td>0.05</td><td>0.99</td><td>113M</td></tr>
+          <tr class="tv"><td class="left">ViSTA&dagger; (small)</td><td>0.01</td><td>0.06</td><td>0.17</td><td>0.15</td><td>0.12</td><td>0.15</td><td>0.94</td><td>0.02</td><td>0.07</td><td>0.17</td><td>0.09</td><td>0.09</td><td>0.09</td><td>0.98</td><td>38M</td></tr>
+          <tr class="tv ours"><td class="left">BA-T (ours)</td><td>0.16</td><td>0.37</td><td>0.59</td><td>0.11</td><td>0.10</td><td>0.11</td><td>0.98</td><td>0.16</td><td>0.34</td><td>0.54</td><td>0.07</td><td>0.07</td><td>0.06</td><td>0.99</td><td>38M</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Structured updates beat a stacked decoder of the same size</h3>
+    <p class="lead">
+      On 7Scenes, both BA-T and ViSTA&dagger; with iterative training (a conventional cross-attention decoder, 38M) are
+      run for 1&ndash;4 iterations. BA-T is better at every iteration and converges within 3&ndash;4 steps.
+    </p>
+    <div class="charts" id="charts" aria-label="Line charts of translation AUC@0.05m and 3D correspondence error over iterations"></div>
+
+    <details class="more">
+      <summary>Full per-iteration table</summary>
+      <div class="table-scroll">
+        <table class="res">
+          <thead>
+            <tr><th rowspan="2" class="left">Method</th><th rowspan="2">Iter</th><th colspan="3">Rot. AUC (deg)&thinsp;&uarr;</th><th colspan="3">Trans. AUC (m)&thinsp;&uarr;</th><th colspan="4">Geometry</th></tr>
+            <tr><th>@5</th><th>@10</th><th>@20</th><th>@0.05</th><th>@0.10</th><th>@0.20</th><th>Corr.&darr;</th><th>Rel.&darr;</th><th>&delta;<sub>1.05</sub>&uarr;</th><th>&delta;<sub>1.25</sub>&uarr;</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="left">ViSTA&dagger;</td><td>&ndash;</td><td>0.426</td><td>0.662</td><td>0.823</td><td>0.104</td><td>0.272</td><td>0.510</td><td>0.052</td><td>0.079</td><td>0.380</td><td>0.940</td></tr>
+            <tr class="sep"><td class="left" rowspan="4">ViSTA&dagger; w/ iterative training</td><td>1</td><td>0.442</td><td>0.676</td><td>0.830</td><td>0.101</td><td>0.270</td><td>0.505</td><td>0.062</td><td>0.061</td><td>0.497</td><td>0.967</td></tr>
+            <tr><td>2</td><td>0.472</td><td>0.699</td><td>0.844</td><td>0.133</td><td>0.322</td><td>0.555</td><td>0.048</td><td>0.060</td><td>0.513</td><td>0.968</td></tr>
+            <tr><td>3</td><td>0.485</td><td>0.708</td><td>0.848</td><td>0.146</td><td>0.341</td><td>0.575</td><td>0.045</td><td>0.060</td><td>0.515</td><td>0.968</td></tr>
+            <tr><td>4</td><td>0.491</td><td>0.712</td><td>0.851</td><td>0.151</td><td>0.346</td><td>0.580</td><td>0.045</td><td>0.060</td><td>0.516</td><td>0.968</td></tr>
+            <tr class="sep ours"><td class="left" rowspan="4">BA-T (ours)</td><td>1</td><td>0.650</td><td>0.819</td><td>0.908</td><td>0.322</td><td>0.555</td><td>0.749</td><td>0.046</td><td>0.051</td><td>0.569</td><td>0.972</td></tr>
+            <tr class="ours"><td>2</td><td>0.671</td><td>0.830</td><td>0.914</td><td>0.401</td><td>0.624</td><td>0.794</td><td>0.032</td><td>0.050</td><td>0.585</td><td>0.975</td></tr>
+            <tr class="ours"><td>3</td><td>0.679</td><td>0.834</td><td>0.916</td><td>0.421</td><td>0.642</td><td>0.805</td><td>0.028</td><td>0.049</td><td>0.594</td><td>0.976</td></tr>
+            <tr class="ours"><td>4</td><td><b>0.683</b></td><td><b>0.836</b></td><td><b>0.917</b></td><td><b>0.422</b></td><td><b>0.643</b></td><td><b>0.805</b></td><td><b>0.026</b></td><td><b>0.048</b></td><td><b>0.601</b></td><td><b>0.976</b></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <h3>Ablation</h3>
+    <p class="lead">
+      Removing any component hurts. Iterative supervision matters most for pose and cross-view consistency,
+      correspondence matching mainly helps relative pose, and the geometry transform is critical for refinement.
+    </p>
+    <div class="table-scroll">
+      <table class="res">
+        <thead>
+          <tr><th rowspan="2" class="left">Setting</th><th colspan="3">Rot. AUC (deg)&thinsp;&uarr;</th><th colspan="3">Trans. AUC (m)&thinsp;&uarr;</th><th colspan="4">Geometry</th></tr>
+          <tr><th>@5</th><th>@10</th><th>@20</th><th>@0.05</th><th>@0.10</th><th>@0.20</th><th>Corr.&darr;</th><th>Rel.&darr;</th><th>&delta;<sub>1.05</sub>&uarr;</th><th>&delta;<sub>1.25</sub>&uarr;</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="left">w/o iterative supervision</td><td>0.667</td><td>0.827</td><td>0.912</td><td>0.404</td><td>0.625</td><td>0.793</td><td>0.036</td><td>0.049</td><td>0.620</td><td>0.974</td></tr>
+          <tr><td class="left">w/o correspondence matching</td><td>0.677</td><td>0.833</td><td>0.916</td><td>0.412</td><td>0.635</td><td>0.802</td><td>0.026</td><td>0.048</td><td>0.591</td><td>0.976</td></tr>
+          <tr><td class="left">w/o geometry transform</td><td>0.665</td><td>0.827</td><td>0.912</td><td>0.385</td><td>0.613</td><td>0.787</td><td>0.027</td><td>0.050</td><td>0.599</td><td>0.974</td></tr>
+          <tr class="ours"><td class="left">Full BA-T</td><td>0.683</td><td>0.836</td><td>0.917</td><td>0.422</td><td>0.643</td><td>0.805</td><td>0.026</td><td>0.048</td><td>0.601</td><td>0.976</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- BibTeX -->
+  <section class="wrap narrow" id="bibtex">
+    <h2>BibTeX</h2>
+    <div class="bib">
+      <button type="button" class="copy" id="copy-bib">Copy</button>
+<pre id="bib-text">@inproceedings{zhang2026bat,
+  title     = {{BA-T}: An Iterative Transformer for Two-View Bundle Adjustment},
+  author    = {Zhang, Ganlin and Chen, Weirong and Cremers, Daniel and Wang, Xi},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2026}
+}</pre>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>
+      Page source lives on the <a href="https://github.com/zhangganlin/BA-T/tree/bat_gh"><code>bat_gh</code></a> branch
+      of <a href="https://github.com/zhangganlin/BA-T">zhangganlin/BA-T</a>.
+    </p>
+  </div>
+</footer>
+
+<script src="static/js/main.js"></script>
+</body>
+</html>
