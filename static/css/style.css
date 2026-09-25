@@ -141,7 +141,6 @@ figcaption { font-size: 0.93rem; color: var(--ink-soft); margin-top: 10px; line-
 }
 .copy:hover { background: var(--accent-soft); }
 
-footer { border-top: 1px solid var(--line); margin-top: 30px; padding: 22px 0 36px; text-align: center; color: var(--ink-soft); font-size: 0.9rem; }
 
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
