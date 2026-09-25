@@ -1,22 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="2.5 0 59 59">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="#4f9be6"/>
       <stop offset="1" stop-color="#1f5f9e"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
-  <!-- iterative refinement loop -->
-  <path d="M 53.6 24.1 A 23 23 0 1 1 39.9 10.4" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M 45.2 12.3 L 40.3 5.3 L 37.2 14.6 Z" fill="#fff" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-  <!-- rays from both views to the shared 3D point -->
-  <path d="M 22.4 39.1 L 32 22 L 41.6 39.1" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width="1.8" stroke-dasharray="2.2 1.8"/>
-  <!-- camera frustums: view A (purple), view B (yellow) -->
-  <path d="M 18 47 L 28.5 42.5 L 16.3 35.7 Z" fill="#b48ae6" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
-  <path d="M 46 47 L 47.7 35.7 L 35.5 42.5 Z" fill="#f2c94c" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
-  <path d="M 28.5 42.5 L 16.3 35.7 M 47.7 35.7 L 35.5 42.5" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
-  <circle cx="18" cy="47" r="2.4" fill="#fff"/>
-  <circle cx="46" cy="47" r="2.4" fill="#fff"/>
-  <!-- shared 3D point -->
-  <circle cx="32" cy="22" r="4.3" fill="#fff"/>
+  <path d="M 32 20 Q 30.6 19.7 29.7 17.8 L 27.9 11.5 Q 26.4 17 25.7 22.5 C 19 20 10 14 3 9 Q 7.8 15.5 6.8 27.5 Q 10.8 22.5 14.6 31 Q 18.3 27 21.8 35.5 Q 25.3 32 28.2 41.5 Q 30 45.5 32 48.5 Q 34 45.5 35.8 41.5 Q 38.7 32 42.2 35.5 Q 45.7 27 49.4 31 Q 53.2 22.5 57.2 27.5 Q 56.2 15.5 61 9 C 54 14 45 20 38.3 22.5 Q 37.6 17 36.1 11.5 L 34.3 17.8 Q 33.4 19.7 32 20 Z" fill="url(#g)"/>
+  <circle cx="29.4" cy="25.2" r="1.35" fill="#fff"/>
+  <circle cx="34.6" cy="25.2" r="1.35" fill="#fff"/>
 </svg>

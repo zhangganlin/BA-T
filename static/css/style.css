@@ -46,7 +46,7 @@ p { margin: 0 0 14px; }
   display: flex; align-items: center; justify-content: center; gap: 22px;
   margin: 0 0 22px;
 }
-.title-row .logo { width: clamp(64px, 8vw, 96px); height: auto; flex: none; border-radius: 22%; box-shadow: 0 4px 14px rgba(31, 95, 158, .25); }
+.title-row .logo { width: clamp(72px, 9vw, 112px); height: auto; flex: none; }
 .title-row .title { margin: 0; text-align: left; }
 .title {
   font-size: clamp(1.75rem, 4.4vw, 2.9rem);
