@@ -1,4 +1,7 @@
 <!-- PROJECT LOGO -->
+<p align="center">
+  <img src="./media/logo.png" alt="BA-T logo" width="120">
+</p>
 <h1 align="center">
   BA-T: An Iterative Transformer for Two-View Bundle Adjustment
 </h1>
