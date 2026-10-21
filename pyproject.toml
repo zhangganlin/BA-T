@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ba_t"
+version = "0.1.0"
+description = "BA-T: an iterative transformer for two-view bundle adjustment (inference code)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0, except files derived from Naver code (CC-BY-NC-SA-4.0, see LICENSE)" }
+# PyTorch / torchvision (and the optional xformers) are intentionally NOT listed: install
+# them first from the index matching your CUDA version (see README.md), otherwise pip
+# may replace them with incompatible default wheels.
+# The curope CUDA extension is built separately (ba_t/models/pos_embed/curope).
+dependencies = [
+    "numpy",
+    "pillow",
+]
+
+[project.optional-dependencies]
+dev = ["pyflakes"]
+
+[tool.setuptools.packages.find]
+include = ["ba_t*"]

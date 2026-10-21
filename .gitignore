@@ -1,0 +1,18 @@
+# python cache
+__pycache__/
+*.py[cod]
+
+# build artifacts (pip install -e . / curope)
+*.egg-info/
+build/
+dist/
+*.so
+
+# pretrained weights (download, see pretrains/README.md)
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# outputs
+outputs/

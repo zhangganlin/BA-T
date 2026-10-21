@@ -1,0 +1,11 @@
+# Runtime dependencies of BA-T inference (ba_t package + demo.py).
+#
+# Install PyTorch FIRST, matching your CUDA version (tested: CUDA 12.1):
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu121
+# optional, faster attention (must match the torch version):
+#   pip install xformers==0.0.28.post3 --index-url https://download.pytorch.org/whl/cu121
+# then:
+#   pip install -r requirements.txt
+numpy
+pillow
+open3d    # viewing the demo's .ply point clouds (not imported by ba_t)
